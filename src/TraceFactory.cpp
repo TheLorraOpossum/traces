@@ -31,7 +31,7 @@ std::pair<std::shared_ptr<Trace>, Error> TraceFactory::make(BoundingBox const& a
         pBuffer = genBuffer();
 
     glm::vec2 initialPosition = uniformInBox(allowedBox);
-    return std::make_pair(std::make_shared<Trace>(initialPosition, pProgram, pBuffer, allowedBox), nil);
+    return std::make_pair(std::make_shared<Trace>(initialPosition, uniformInInterval(0, 2 * M_PI), pProgram, pBuffer, allowedBox), nil);
 }
 
 std::shared_ptr<const GLuint> TraceFactory::pProgram;

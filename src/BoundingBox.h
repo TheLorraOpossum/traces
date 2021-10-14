@@ -54,4 +54,10 @@ struct BoundingBox
         BoundingBox scaled{factor * onOrigin.topLeft, factor * onOrigin.bottomRight};
         return scaled.offsetTo(v);
     }
+
+    bool contains(glm::vec2 const &point)
+    {
+        return point.x >= topLeft.x && point.x <= bottomRight.x &&
+               point.y >= bottomRight.y && point.y <= topLeft.y;
+    }
 };

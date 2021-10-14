@@ -1,38 +1,43 @@
 #include "Trace.h"
 #include "TraceFactory.h"
 #include "Utils.h"
+#include <glm/gtx/polar_coordinates.hpp>
 #include <random>
 
-Trace::Trace(glm::vec2 const& initialPosition, std::shared_ptr<const GLuint> pProgram, std::shared_ptr<const GLuint> pBuffer, BoundingBox const& allowedBox)
+Trace::Trace(glm::vec2 const& initialPosition, float initialDirection_, std::shared_ptr<const GLuint> pProgram, std::shared_ptr<const GLuint> pBuffer, BoundingBox const& allowedBox)
     : position_{initialPosition}
+    , direction_{initialDirection_}
     , color_{1.0, 0.0, 1.0}
     , pProgram_{pProgram}
     , pBuffer_{pBuffer}
     , allowedBox_{allowedBox}
     , creationTime_{std::chrono::steady_clock::now()}
     , deathTime_{creationTime_}
+    , killed_{false}
     , id_{++nextId_}
 {
     std::random_device rd;
     std::mt19937 gen{rd()};
     std::uniform_int_distribution<> dis{1000, 5000};
     deathTime_ += std::chrono::milliseconds{dis(gen)};
-    step(std::chrono::milliseconds{1});
+    step(std::chrono::milliseconds{16});
 }
 
 void Trace::step(std::chrono::milliseconds const &ms)
 {
+    float newDirection = uniformAround(direction_, 3 * M_PI / 36.0);
+
+    glm::vec2 deltaPositionPolar = glm::vec2(
+        kMaxStepBoxSizePerMs.x * static_cast<float>(ms.count()),
+        newDirection);
+
+    glm::vec2 deltaPosition{
+        deltaPositionPolar.x * cos(deltaPositionPolar.y),
+        deltaPositionPolar.x * sin(deltaPositionPolar.y)};
+
     prevPosition_ = position_;
-
-    glm::vec2 const maxStepBoxSizeHalf = kMaxStepBoxSizePerMs * static_cast<float>(ms.count());
-    glm::vec2 const topLeft = glm::vec2{-maxStepBoxSizeHalf.x, maxStepBoxSizeHalf.y};
-    glm::vec2 const bottomRight = glm::vec2{maxStepBoxSizeHalf.x, -maxStepBoxSizeHalf.y};
-
-    BoundingBox stepBox{BoundingBox{topLeft, bottomRight}.offsetTo(position_).intersect(allowedBox_)};
-
-    position_ = uniformInBox(stepBox); // TODO: change to +=
-
-    //std::cout << "Trace::step() " << *this << std::endl;
+    direction_ = newDirection;
+    position_ += deltaPosition;
 }
 
 void Trace::render()
@@ -61,15 +66,33 @@ void Trace::render()
 std::pair<std::shared_ptr<Trace>, std::shared_ptr<Trace>> Trace::split() const
 {
     return std::make_pair(
-        std::make_shared<Trace>(position_, pProgram_, pBuffer_, allowedBox_),
-        std::make_shared<Trace>(position_, pProgram_, pBuffer_, allowedBox_)
+        std::make_shared<Trace>(position_, uniformAround(direction_, M_PI / 4), pProgram_, pBuffer_, allowedBox_),
+        std::make_shared<Trace>(position_, uniformAround(direction_, M_PI / 4), pProgram_, pBuffer_, allowedBox_)
     );
 }
 
 
 bool Trace::isDead() const
 {
-    return std::chrono::steady_clock::now() >= deathTime_;
+    return killed_ || std::chrono::steady_clock::now() >= deathTime_;
+}
+
+void Trace::kill()
+{
+    killed_ = true;
+}
+
+float Trace::prevTheta() const
+{
+    glm::vec2 prevDeltaPosition = position_ - prevPosition_;
+    return atan2(prevDeltaPosition.y, prevDeltaPosition.x);
+}
+
+float Trace::uniformAround(float thetaCenter, float thetaWidth) const
+{
+    return uniformInInterval(
+        thetaCenter - thetaWidth / 2.0,
+        thetaCenter + thetaWidth / 2.0);
 }
 
 std::ostream &operator<<(std::ostream &str, Trace const &t)
@@ -81,5 +104,5 @@ std::ostream &operator<<(std::ostream &str, Trace const &t)
     return str;
 }
 
-glm::vec2 const Trace::kMaxStepBoxSizePerMs{0.001, 0.001};
+glm::vec2 const Trace::kMaxStepBoxSizePerMs{0.1/(16.0 * 60), 0.1/(16.0 * 60)};
 std::size_t Trace::nextId_{0};

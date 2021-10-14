@@ -62,7 +62,7 @@ int main(int argc, char* argv[])
 
     glm::vec2 const topLeft{-1.0, 1.0};
     glm::vec2 const bottomRight{1.0, -1.0};
-    std::vector<std::shared_ptr<Trace>> vpTraces = genTraces(1, topLeft, bottomRight);
+    std::vector<std::shared_ptr<Trace>> vpTraces = genTraces(5, topLeft, bottomRight);
     auto [pDoubleFramebuffer, err] = DoubleFramebuffer::get(kWidth, kHeight);
     if (err != nil)
     {
@@ -84,52 +84,51 @@ int main(int argc, char* argv[])
 
         pDoubleFramebuffer->renderPreviousFrame();
 
-        auto itTrace = vpTraces.begin();
         std::vector<std::shared_ptr<Trace>> newTraces;
-        bool anyTracesDead{false};
         prevTraceCount = vpTraces.size();
+        bool tracesChanged{false};
+
+        auto itTrace = vpTraces.begin();
         while (itTrace != vpTraces.end())
         {
             auto pTrace = *itTrace;
-            if (!pTrace->isDead())
+            if (!BoundingBox{topLeft, bottomRight}.contains(pTrace->position_))
             {
-                itTrace++;
+                std::cout << "KILL " << *pTrace << std::endl;
+                pTrace->kill();
+                itTrace = vpTraces.erase(itTrace);
+                tracesChanged = true;
                 continue;
             }
-            anyTracesDead = true;
-            if (rand() / static_cast<double>(RAND_MAX) > 0.5)
+            if (pTrace->isDead())
             {
-                auto [pTrace1, pTrace2] = pTrace->split();
-                newTraces.push_back(pTrace1);
-                newTraces.push_back(pTrace2);
-                std::cout << "SPLIT\t";
+                std::cout << "DEAD " << *pTrace << std::endl;
+                if (uniformInInterval(0.0, 1.0) > 0.4)
+                {
+                    auto [pTrace1, pTrace2] = pTrace->split();
+                    newTraces.push_back(pTrace1);
+                    newTraces.push_back(pTrace2);
+                }
+                itTrace = vpTraces.erase(itTrace);
+                tracesChanged = true;
+                continue;
             }
-            else
-            {
-                std::cout << "DIE\t";
-            }
-            std::cout << *pTrace << std::endl;
-            itTrace = vpTraces.erase(itTrace);
+            pTrace->step(16ms);
+            itTrace++;
         }
         for (auto pTrace : newTraces)
         {
+            std::cout << "NEW " << *pTrace << std::endl;
             vpTraces.push_back(pTrace);
         }
-        if (anyTracesDead)
+        if (tracesChanged)
         {
-            std::cout << "\ntrace count " << prevTraceCount << " -> " << vpTraces.size() << std::endl;
-            std::cout << "\n=========\n" << std::endl;
+            std::cout << "count " << prevTraceCount << " -> " << vpTraces.size() << std::endl;
+            std::cout << std::endl << "============================" << std::endl << std::endl;
         }
-
-        itTrace = vpTraces.begin();
-        while (itTrace != vpTraces.end())
+        for (auto pTrace : vpTraces)
         {
-            auto pTrace = *itTrace;
-            for (int i = 0; i < 5; i++) {
-                pTrace->step(16ms);
-                pTrace->render();
-            }
-            itTrace++;
+            pTrace->render();
         }
 
         pDoubleFramebuffer->blitAndSwap();

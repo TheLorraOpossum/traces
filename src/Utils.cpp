@@ -33,6 +33,12 @@ glm::vec2 uniformInBox(BoundingBox const& bb)
     return uniformInBox(bb.topLeft, bb.bottomRight);
 }
 
+float uniformInInterval(float left, float right)
+{
+    std::uniform_real_distribution<float> dis{left, right};
+    return dis(gen);
+}
+
 std::shared_ptr<GLuint const> genBuffer()
 {
     GLuint buffer{InvalidId};
