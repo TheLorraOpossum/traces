@@ -13,7 +13,7 @@ std::pair<std::shared_ptr<const GLuint>, Error> makeProgram()
     return makeProgram(pVert, pFrag);
 }
 
-std::pair<std::shared_ptr<Trace>, Error> TraceFactory::make(glm::vec2 const &boundTopLeft, glm::vec2 const &boundBottomRight)
+std::pair<std::shared_ptr<Trace>, Error> TraceFactory::make(BoundingBox const& allowedBox)
 {
     if (!pProgram)
     {
@@ -30,8 +30,8 @@ std::pair<std::shared_ptr<Trace>, Error> TraceFactory::make(glm::vec2 const &bou
     if (!pBuffer)
         pBuffer = genBuffer();
 
-    glm::vec2 initialPosition = uniformInBox(boundTopLeft, boundBottomRight);
-    return std::make_pair(std::make_shared<Trace>(initialPosition, pProgram, pBuffer), nil);
+    glm::vec2 initialPosition = uniformInBox(allowedBox);
+    return std::make_pair(std::make_shared<Trace>(initialPosition, pProgram, pBuffer, allowedBox), nil);
 }
 
 std::shared_ptr<const GLuint> TraceFactory::pProgram;

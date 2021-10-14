@@ -1,5 +1,7 @@
 #pragma once
 
+#include "BoundingBox.h"
+
 #include <GL/glew.h>
 #include <glm/glm.hpp>
 #include <chrono>
@@ -10,7 +12,7 @@
 
 struct Trace
 {
-    Trace(glm::vec2 const& initialPosition, std::shared_ptr<const GLuint> pProgram, std::shared_ptr<const GLuint> pBuffer);
+    Trace(glm::vec2 const& initialPosition, std::shared_ptr<const GLuint> pProgram, std::shared_ptr<const GLuint> pBuffer, BoundingBox const& allowedBox);
 
     void step(std::chrono::milliseconds const& ms);
 
@@ -25,6 +27,7 @@ struct Trace
     glm::vec2 prevPosition_;
     std::shared_ptr<GLuint const> pProgram_;
     std::shared_ptr<GLuint const> pBuffer_;
+    BoundingBox allowedBox_;
     std::chrono::steady_clock::time_point creationTime_;
     std::chrono::steady_clock::time_point deathTime_;
     std::size_t id_;

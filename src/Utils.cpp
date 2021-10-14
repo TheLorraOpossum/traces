@@ -28,6 +28,11 @@ glm::vec2 uniformInBox(glm::vec2 const& boundTopLeft, glm::vec2 const& boundBott
     return glm::vec2{unifX(gen), unifY(gen)};
 }
 
+glm::vec2 uniformInBox(BoundingBox const& bb)
+{
+    return uniformInBox(bb.topLeft, bb.bottomRight);
+}
+
 std::shared_ptr<GLuint const> genBuffer()
 {
     GLuint buffer{InvalidId};

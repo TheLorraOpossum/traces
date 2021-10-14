@@ -35,7 +35,7 @@ std::vector<std::shared_ptr<Trace>> genTraces(int count, glm::vec2 const& topLef
 
     for (int i = 0; i < count; i++)
     {
-        auto [pTrace, err] = TraceFactory::make(topLeft, bottomRight);
+        auto [pTrace, err] = TraceFactory::make(BoundingBox{glm::vec2{-1.0, 1.0}, glm::vec2{1.0, -1.0}});
         if (err != nil)
         {
             std::cout << "could not make trace: " << err.value() << std::endl;
@@ -53,8 +53,8 @@ using namespace std::chrono_literals;
 int main(int argc, char* argv[])
 {
     glfw::Lifecycle lc;
-    constexpr int kWidth = 640;
-    constexpr int kHeight = 480;
+    constexpr int kWidth = 1000;
+    constexpr int kHeight = 1000;
     glfw::Window w{kWidth, kHeight, true};
 
     w.select();
@@ -62,7 +62,7 @@ int main(int argc, char* argv[])
 
     glm::vec2 const topLeft{-1.0, 1.0};
     glm::vec2 const bottomRight{1.0, -1.0};
-    std::vector<std::shared_ptr<Trace>> vpTraces = genTraces(5, topLeft, bottomRight);
+    std::vector<std::shared_ptr<Trace>> vpTraces = genTraces(1, topLeft, bottomRight);
     auto [pDoubleFramebuffer, err] = DoubleFramebuffer::get(kWidth, kHeight);
     if (err != nil)
     {
@@ -87,6 +87,7 @@ int main(int argc, char* argv[])
         auto itTrace = vpTraces.begin();
         std::vector<std::shared_ptr<Trace>> newTraces;
         bool anyTracesDead{false};
+        prevTraceCount = vpTraces.size();
         while (itTrace != vpTraces.end())
         {
             auto pTrace = *itTrace;
@@ -110,7 +111,6 @@ int main(int argc, char* argv[])
             std::cout << *pTrace << std::endl;
             itTrace = vpTraces.erase(itTrace);
         }
-        
         for (auto pTrace : newTraces)
         {
             vpTraces.push_back(pTrace);
@@ -125,8 +125,10 @@ int main(int argc, char* argv[])
         while (itTrace != vpTraces.end())
         {
             auto pTrace = *itTrace;
-            pTrace->step(16ms);
-            pTrace->render();
+            for (int i = 0; i < 5; i++) {
+                pTrace->step(16ms);
+                pTrace->render();
+            }
             itTrace++;
         }
 
