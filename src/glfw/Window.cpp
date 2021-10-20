@@ -1,4 +1,5 @@
 #include "Window.h"
+#include "../Utils.h"
 #include <GL/glew.h>
 #include <GLFW/glfw3.h>
 #include <thread>
@@ -6,14 +7,14 @@
 using namespace glfw;
 
 Window::Window(int width, int height, std::string const& title, bool borderless)
-    : swapPeriodMs_{16}
+    : swapPeriodMs_{periodMs()}
 {
     if (borderless)
     {
         glfwWindowHint(GLFW_DECORATED, GLFW_FALSE);
     }
     glfwWindowHint(GLFW_VISIBLE, GLFW_FALSE);
-    glfwWindowHint(GLFW_SAMPLES, 16);
+    glfwWindowHint(GLFW_SAMPLES, 4);
     pWindow_ = glfwCreateWindow(width, height, title.c_str(), nullptr, nullptr);
     select();
     glewInit();

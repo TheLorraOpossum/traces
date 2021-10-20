@@ -4,13 +4,12 @@
 #include <glm/gtx/polar_coordinates.hpp>
 #include <random>
 
-Trace::Trace(glm::vec2 const& initialPosition, float initialDirection_, std::shared_ptr<const GLuint> pProgram, std::shared_ptr<const GLuint> pBuffer, BoundingBox const& allowedBox)
+Trace::Trace(glm::vec2 const& initialPosition, float initialDirection_, std::shared_ptr<const GLuint> pProgram, std::shared_ptr<const GLuint> pBuffer)
     : position_{initialPosition}
     , direction_{initialDirection_}
     , color_{1.0, 0.0, 1.0}
     , pProgram_{pProgram}
     , pBuffer_{pBuffer}
-    , allowedBox_{allowedBox}
     , creationTime_{std::chrono::steady_clock::now()}
     , deathTime_{creationTime_}
     , killed_{false}
@@ -18,9 +17,12 @@ Trace::Trace(glm::vec2 const& initialPosition, float initialDirection_, std::sha
 {
     std::random_device rd;
     std::mt19937 gen{rd()};
-    std::uniform_int_distribution<> dis{1000, 5000};
-    deathTime_ += std::chrono::milliseconds{dis(gen)};
-    step(std::chrono::milliseconds{16});
+    std::geometric_distribution<> dis;
+    std::normal_distribution<> nd{1.0, 0.25};
+    //deathTime_ += std::chrono::milliseconds{dis(gen)*2000};
+    deathTime_ += std::chrono::milliseconds{static_cast<int>(nd(gen)*800)};
+    speed_ = nd(gen);
+    step(periodMs());
 }
 
 void Trace::step(std::chrono::milliseconds const &ms)
@@ -28,7 +30,7 @@ void Trace::step(std::chrono::milliseconds const &ms)
     float newDirection = uniformAround(direction_, 3 * M_PI / 36.0);
 
     glm::vec2 deltaPositionPolar = glm::vec2(
-        kMaxStepBoxSizePerMs.x * static_cast<float>(ms.count()),
+        speed_ * kMaxStepBoxSizePerMs.x * static_cast<float>(ms.count()),
         newDirection);
 
     glm::vec2 deltaPosition{
@@ -66,8 +68,8 @@ void Trace::render()
 std::pair<std::shared_ptr<Trace>, std::shared_ptr<Trace>> Trace::split() const
 {
     return std::make_pair(
-        std::make_shared<Trace>(position_, uniformAround(direction_, M_PI / 4), pProgram_, pBuffer_, allowedBox_),
-        std::make_shared<Trace>(position_, uniformAround(direction_, M_PI / 4), pProgram_, pBuffer_, allowedBox_)
+        std::make_shared<Trace>(position_, uniformAround(direction_, M_PI / 4), pProgram_, pBuffer_),
+        std::make_shared<Trace>(position_, uniformAround(direction_, M_PI / 4), pProgram_, pBuffer_)
     );
 }
 
@@ -104,5 +106,5 @@ std::ostream &operator<<(std::ostream &str, Trace const &t)
     return str;
 }
 
-glm::vec2 const Trace::kMaxStepBoxSizePerMs{0.1/(16.0 * 60), 0.1/(16.0 * 60)};
+glm::vec2 const Trace::kMaxStepBoxSizePerMs{0.1/(periodMs().count() * 60), 0.1/(periodMs().count() * 60)};
 std::size_t Trace::nextId_{0};

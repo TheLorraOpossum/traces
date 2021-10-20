@@ -4,6 +4,7 @@
 #include "Error.h"
 #include <GL/glew.h>
 #include <glm/glm.hpp>
+#include <chrono>
 #include <memory>
 #include <string>
 #include <utility>
@@ -13,5 +14,7 @@ glm::vec2 uniformInBox(glm::vec2 const& boundTopLeft, glm::vec2 const& boundBott
 glm::vec2 uniformInBox(BoundingBox const& bb);
 float uniformInInterval(float left, float right);
 std::shared_ptr<GLuint const> genBuffer();
+
+std::chrono::milliseconds periodMs();
 
 constexpr GLuint InvalidId = 0u;
