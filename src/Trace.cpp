@@ -58,7 +58,7 @@ void Trace::render()
 
     glUniform3f(glGetUniformLocation(*pProgram_, "color"), color_.r, color_.g, color_.b);
 
-    glDrawArrays(GL_LINES, 0, 4);
+    glDrawArrays(GL_LINES, 0, 2);
 
     glDisableVertexAttribArray(positionLocation);
     glBindBuffer(GL_ARRAY_BUFFER, 0);
