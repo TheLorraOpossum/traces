@@ -30,7 +30,7 @@ void Trace::step(std::chrono::milliseconds const &ms)
     float newDirection = uniformAround(direction_, 3 * M_PI / 36.0);
 
     glm::vec2 deltaPositionPolar = glm::vec2(
-        speed_ * kMaxStepBoxSizePerMs.x * static_cast<float>(ms.count()),
+        speed_ * kMaxStepMagnitude * ms.count(),
         newDirection);
 
     glm::vec2 deltaPosition{
@@ -106,5 +106,5 @@ std::ostream &operator<<(std::ostream &str, Trace const &t)
     return str;
 }
 
-glm::vec2 const Trace::kMaxStepBoxSizePerMs{0.1/(periodMs().count() * 60), 0.1/(periodMs().count() * 60)};
+float const Trace::kMaxStepMagnitude{0.1f/(periodMs().count() * 60)};
 std::size_t Trace::nextId_{0};

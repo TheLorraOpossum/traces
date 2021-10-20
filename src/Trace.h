@@ -38,7 +38,7 @@ struct Trace
     bool killed_;
     std::size_t id_;
 
-    static glm::vec2 const kMaxStepBoxSizePerMs;
+    static float const kMaxStepMagnitude;
     static std::size_t nextId_;
 
     friend std::ostream& operator<<(std::ostream& str, Trace const& t);
