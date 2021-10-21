@@ -57,13 +57,21 @@ void mouseBtnFun(GLFWwindow* window, int button, int action, int mod)
 {
     if (button == GLFW_MOUSE_BUTTON_1 && action == GLFW_PRESS)
     {
-        glm::vec2 mousePosition = getMouseCursorPosition(window);
-        glm::vec2 normalizedMousePosition = toNormalizedCoordinates(window, mousePosition);
+        glm::vec2 mousePixelPosition = getMouseCursorPosition(window);
 
-        std::cout << "mouse: (" << normalizedMousePosition.x << "," << normalizedMousePosition.y << ")" << std::endl;
+        glm::vec2 windowSize = getWindowSize(window);
+        float h = windowSize.y;
+        glm::mat2 toMonometric{
+            glm::vec2{2.0f/h, 0.0f},
+            glm::vec2{0.0f, -2.0f/h}
+        };
+        glm::vec2 pixelOriginInMonometric{-windowSize.x/windowSize.y, 1.0f};
+        glm::vec2 monometricPosition = toMonometric * mousePixelPosition + pixelOriginInMonometric;
+
+        std::cout << "mouse: (" << monometricPosition.x << "," << monometricPosition.y << ")" << std::endl;
 
         std::vector<std::shared_ptr<Trace>> *vpTraces = reinterpret_cast<std::vector<std::shared_ptr<Trace>> *>(glfwGetWindowUserPointer(window));
-        auto [pTrace, err] = TraceFactory::make(normalizedMousePosition, uniformInInterval(0, 2 * M_PI));
+        auto [pTrace, err] = TraceFactory::make(monometricPosition, uniformInInterval(0, 2 * M_PI), windowSize.y/windowSize.x);
         if (err == nil)
         {
             vpTraces->push_back(pTrace);
@@ -79,13 +87,13 @@ void mouseBtnFun(GLFWwindow* window, int button, int action, int mod)
     }
 }
 
-std::vector<std::shared_ptr<Trace>> genTraces(int count, glm::vec2 const& topLeft, glm::vec2 const& bottomRight)
+std::vector<std::shared_ptr<Trace>> genTraces(int count, glm::vec2 const& topLeft, glm::vec2 const& bottomRight, float windowHeightOverWidth)
 {
     std::vector<std::shared_ptr<Trace>> vpTraces;
 
     for (int i = 0; i < count; i++)
     {
-        auto [pTrace, err] = TraceFactory::make(BoundingBox{glm::vec2{-1.0, 1.0}, glm::vec2{1.0, -1.0}});
+        auto [pTrace, err] = TraceFactory::make(BoundingBox{glm::vec2{-1.0, 1.0}, glm::vec2{1.0, -1.0}}, windowHeightOverWidth);
         if (err != nil)
         {
             std::cout << "could not make trace: " << err.value() << std::endl;
@@ -103,18 +111,20 @@ using namespace std::chrono_literals;
 int main(int argc, char* argv[])
 {
     glfw::Lifecycle lc;
-    constexpr int kWidth = 1000;
-    constexpr int kHeight = 1000;
+    constexpr int kWidth = 800;
+    constexpr int kHeight = 300;
     glfw::Window w{kWidth, kHeight, true};
+    float widthOverHeight = static_cast<float>(kWidth) / kHeight;
+    float heightOverWidth = 1.0f/widthOverHeight;
 
     constexpr std::size_t kMaxTraces{200};
 
     w.select();
     w.show();
 
-    glm::vec2 const topLeft{-1.0, 1.0};
-    glm::vec2 const bottomRight{1.0, -1.0};
-    std::vector<std::shared_ptr<Trace>> vpTraces = genTraces(10, topLeft, bottomRight);
+    glm::vec2 const topLeft{-widthOverHeight, 1.0};
+    glm::vec2 const bottomRight{widthOverHeight, -1.0};
+    std::vector<std::shared_ptr<Trace>> vpTraces = genTraces(5, topLeft, bottomRight, heightOverWidth);
     auto [pDoubleFramebuffer, err] = DoubleFramebuffer::get(kWidth, kHeight);
     if (err != nil)
     {
@@ -159,10 +169,11 @@ int main(int argc, char* argv[])
         while (itTrace != vpTraces.end())
         {
             auto pTrace = *itTrace;
-            if (!BoundingBox{topLeft, bottomRight}.contains(pTrace->position_) ||
+            bool traceOutOfBoundary = !BoundingBox{topLeft, bottomRight}.contains(pTrace->position_);
+            if (traceOutOfBoundary ||
             (vpTraces.size() > (kMaxTraces - (kMaxTraces / 5))))
             {
-                std::cout << "KILL " << *pTrace << std::endl;
+                std::cout << "KILL (" << (traceOutOfBoundary ? "B": "L") << ") " << *pTrace << std::endl;
                 pTrace->kill();
                 itTrace = vpTraces.erase(itTrace);
                 tracesChanged = true;

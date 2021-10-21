@@ -33,13 +33,13 @@ void Trace::step(std::chrono::milliseconds const &ms)
         speed_ * kMaxStepMagnitude * ms.count(),
         newDirection);
 
-    glm::vec2 deltaPosition{
+    glm::vec2 deltaPositionMonometric{
         deltaPositionPolar.x * cos(deltaPositionPolar.y),
         deltaPositionPolar.x * sin(deltaPositionPolar.y)};
 
     prevPosition_ = position_;
     direction_ = newDirection;
-    position_ += deltaPosition;
+    position_ += deltaPositionMonometric;
 }
 
 void Trace::render()
@@ -52,7 +52,7 @@ void Trace::render()
     std::vector<float> vs{prevPosition_.x, prevPosition_.y, position_.x, position_.y};
     glBufferData(GL_ARRAY_BUFFER, static_cast<int>(vs.size()) * sizeof(vs[0]), vs.data(), GL_STREAM_DRAW);
 
-    GLint positionLocation = glGetAttribLocation(*pProgram_, "position");
+    GLint positionLocation = glGetAttribLocation(*pProgram_, "positionMonometric");
     glVertexAttribPointer(positionLocation, 2, GL_FLOAT, GL_FALSE, 2 * sizeof(float), 0);
     glEnableVertexAttribArray(positionLocation);
 
