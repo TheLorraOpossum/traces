@@ -8,15 +8,19 @@
 #include <memory>
 #include <utility>
 
+struct TraceFactoryImpl;
+
 struct TraceFactory
 {
-    static std::pair<std::shared_ptr<Trace>, Error> make(BoundingBox const& allowedBox, float windowHeightOverWidth);
-    static std::pair<std::shared_ptr<Trace>, Error> make(glm::vec2 const& initialPosition, float initialDirection_, float windowHeightOverWidth);
+    static std::pair<std::shared_ptr<TraceFactory>, Error> getInstance(float windowHeightOverWidth);
 
+    std::pair<std::shared_ptr<Trace>, Error> make(BoundingBox const& allowedBox);
+    std::pair<std::shared_ptr<Trace>, Error> make(glm::vec2 const& initialPosition, float initialDirection_);
+    static void setNormalCoordinatesTransform(float windowHeightOverWidth);
 
-    static void setNormalCoordinatesTransform(std::shared_ptr<GLuint const> pProgram, float windowHeightOverWidth);
+private:
+    static std::pair<std::shared_ptr<TraceFactoryImpl>, Error> createInstance(float windowHeightOverWidth);
 
-    static std::shared_ptr<const GLuint> pProgram;
-    static std::shared_ptr<const GLuint> pBuffer;
-    static Error programCreationError;
+    static std::shared_ptr<TraceFactoryImpl> pImpl;
+    static Error instanceCreationError;
 };

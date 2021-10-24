@@ -4,6 +4,17 @@
 #include "Shader.h"
 #include <glm/gtc/type_ptr.hpp>
 
+struct TraceFactoryImpl
+{
+    std::pair<std::shared_ptr<Trace>, Error> make(BoundingBox const& allowedBox);
+    std::pair<std::shared_ptr<Trace>, Error> make(glm::vec2 const& initialPosition, float initialDirection_);
+    void setNormalCoordinatesTransform(float windowHeightOverWidth);
+
+    std::shared_ptr<const GLuint> pProgram;
+    std::shared_ptr<const GLuint> pBuffer;
+};
+
+
 std::pair<std::shared_ptr<const GLuint>, Error> makeProgram()
 {
     auto [pVert, pFrag, err] = loadShaderPair("../src/shaders", "trace");
@@ -14,47 +25,18 @@ std::pair<std::shared_ptr<const GLuint>, Error> makeProgram()
     return makeProgram(pVert, pFrag);
 }
 
-std::pair<std::shared_ptr<Trace>, Error> TraceFactory::make(BoundingBox const& allowedBox, float windowHeightOverWidth)
+std::pair<std::shared_ptr<Trace>, Error> TraceFactoryImpl::make(BoundingBox const &allowedBox)
 {
-    if (!pProgram)
-    {
-        if (programCreationError)
-        {
-            return std::make_pair(nullptr, makeError("could not create trace, don't have program:", programCreationError.value()));
-        }
-        std::tie(pProgram, programCreationError) = makeProgram();
-        if (programCreationError)
-        {
-            return std::make_pair(nullptr, makeError("could not create trace, failed building program:", programCreationError.value()));
-        }
-        setNormalCoordinatesTransform(pProgram, windowHeightOverWidth);
-    }
-    if (!pBuffer)
-        pBuffer = genBuffer();
-
     glm::vec2 initialPosition = uniformInBox(allowedBox);
     return std::make_pair(std::make_shared<Trace>(initialPosition, uniformInInterval(0, 2 * M_PI), pProgram, pBuffer), nil);
 }
 
-std::pair<std::shared_ptr<Trace>, Error> TraceFactory::make(glm::vec2 const &initialPosition, float initialDirection_, float windowHeightOverWidth)
+std::pair<std::shared_ptr<Trace>, Error> TraceFactoryImpl::make(glm::vec2 const &initialPosition, float initialDirection_)
 {
-    if (!pProgram)
-    {
-        if (programCreationError)
-        {
-            return std::make_pair(nullptr, makeError("could not create trace, don't have program:", programCreationError.value()));
-        }
-        std::tie(pProgram, programCreationError) = makeProgram();
-        if (programCreationError)
-        {
-            return std::make_pair(nullptr, makeError("could not create trace, failed building program:", programCreationError.value()));
-        }
-        setNormalCoordinatesTransform(pProgram, windowHeightOverWidth);
-    }
     return std::make_pair(std::make_shared<Trace>(initialPosition, initialDirection_, pProgram, pBuffer), nil);
 }
 
-void TraceFactory::setNormalCoordinatesTransform(std::shared_ptr<GLuint const> pProgram, float windowHeightOverWidth)
+void TraceFactoryImpl::setNormalCoordinatesTransform(float windowHeightOverWidth)
 {
     glUseProgram(*pProgram);
     glm::mat2 toNormalCoordinates{
@@ -67,6 +49,58 @@ void TraceFactory::setNormalCoordinatesTransform(std::shared_ptr<GLuint const> p
     glUseProgram(InvalidId);
 }
 
-std::shared_ptr<const GLuint> TraceFactory::pProgram;
-std::shared_ptr<const GLuint> TraceFactory::pBuffer;
-Error TraceFactory::programCreationError{nil};
+std::pair<std::shared_ptr<TraceFactory>, Error> TraceFactory::getInstance(float windowHeightOverWidth)
+{
+    if (!pImpl && instanceCreationError) return std::make_pair(nullptr, makeError("could not make instance:", instanceCreationError.value()));
+    if (!instanceCreationError)
+    {
+        std::tie(pImpl, instanceCreationError) = createInstance(windowHeightOverWidth);
+        if (instanceCreationError) return std::make_pair(nullptr, makeError("could not make instance:", instanceCreationError.value()));
+    }
+    return std::make_pair(std::make_shared<TraceFactory>(), nil);
+}
+
+std::pair<std::shared_ptr<Trace>, Error> TraceFactory::make(BoundingBox const& allowedBox)
+{
+    if (!pImpl) return std::make_pair(nullptr, makeError("no TraceFactory instance:", instanceCreationError.value()));
+    return pImpl->make(allowedBox);
+}
+
+std::pair<std::shared_ptr<Trace>, Error> TraceFactory::make(glm::vec2 const &initialPosition, float initialDirection_)
+{
+    if (!pImpl) return std::make_pair(nullptr, makeError("no TraceFactory instance:", instanceCreationError.value()));
+    return pImpl->make(initialPosition, initialDirection_);
+}
+
+void TraceFactory::setNormalCoordinatesTransform(float windowHeightOverWidth)
+{
+    if (!pImpl) return;
+    pImpl->setNormalCoordinatesTransform(windowHeightOverWidth);
+}
+
+std::pair<std::shared_ptr<TraceFactoryImpl>, Error> TraceFactory::createInstance(float windowHeightOverWidth)
+{
+    if (!pImpl)
+    {
+        if (instanceCreationError)
+        {
+            return std::make_pair(nullptr, makeError("could not create TraceFactory instance, don't have program:", instanceCreationError.value()));
+        }
+        auto [pProgram, err] = makeProgram();
+        if (err != nil)
+        {
+            instanceCreationError = err;
+            return std::make_pair(nullptr, makeError("could not create TraceFactory instance, failed building program:", instanceCreationError.value()));
+        }
+        pImpl = std::make_shared<TraceFactoryImpl>();
+        pImpl->pProgram = pProgram;
+        pImpl->setNormalCoordinatesTransform(windowHeightOverWidth);
+    }
+    if (!pImpl->pBuffer)
+        pImpl->pBuffer = genBuffer();
+
+    return std::make_pair(pImpl, nil);
+}
+
+std::shared_ptr<TraceFactoryImpl> TraceFactory::pImpl;
+Error TraceFactory::instanceCreationError;

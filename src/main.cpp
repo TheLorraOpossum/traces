@@ -71,8 +71,14 @@ void mouseBtnFun(GLFWwindow* window, int button, int action, int mod)
         std::cout << "mouse: (" << monometricPosition.x << "," << monometricPosition.y << ")" << std::endl;
 
         std::vector<std::shared_ptr<Trace>> *vpTraces = reinterpret_cast<std::vector<std::shared_ptr<Trace>> *>(glfwGetWindowUserPointer(window));
-        auto [pTrace, err] = TraceFactory::make(monometricPosition, uniformInInterval(0, 2 * M_PI), windowSize.y/windowSize.x);
-        if (err == nil)
+        auto [pTraceFactory, err] = TraceFactory::getInstance(windowSize.y/windowSize.x);
+        if (err != nil)
+        {
+            std::cout << "could not get TraceFactory instance: " << err.value() << std::endl;
+            return;
+        }
+        auto [pTrace, err1] = pTraceFactory->make(monometricPosition, uniformInInterval(0, 2 * M_PI));
+        if (err1 == nil)
         {
             vpTraces->push_back(pTrace);
             return;
@@ -90,10 +96,16 @@ void mouseBtnFun(GLFWwindow* window, int button, int action, int mod)
 std::vector<std::shared_ptr<Trace>> genTraces(int count, glm::vec2 const& topLeft, glm::vec2 const& bottomRight, float windowHeightOverWidth)
 {
     std::vector<std::shared_ptr<Trace>> vpTraces;
+    auto [pTraceFactory, err] = TraceFactory::getInstance(windowHeightOverWidth);
+    if (err != nil)
+    {
+        std::cout << "could not genTraces():" << err.value() << std::endl;
+        return {};
+    }
 
     for (int i = 0; i < count; i++)
     {
-        auto [pTrace, err] = TraceFactory::make(BoundingBox{glm::vec2{-1.0, 1.0}, glm::vec2{1.0, -1.0}}, windowHeightOverWidth);
+        auto [pTrace, err] = pTraceFactory->make(BoundingBox{glm::vec2{-1.0, 1.0}, glm::vec2{1.0, -1.0}});
         if (err != nil)
         {
             std::cout << "could not make trace: " << err.value() << std::endl;
