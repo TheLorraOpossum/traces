@@ -1,3 +1,4 @@
+#include "BulkRenderer.h"
 #include "DoubleFramebuffer.h"
 #include "Error.h"
 #include "Trace.h"
@@ -12,6 +13,7 @@
 #include <GLFW/glfw3.h>
 #include <array>
 #include <chrono>
+#include <iomanip>
 #include <iostream>
 #include <memory>
 #include <optional>
@@ -33,7 +35,7 @@ glm::vec2 getMouseCursorPosition(GLFWwindow* window)
 {
     glm::dvec2 mousePosition;
     glfwGetCursorPos(window, &mousePosition.x, &mousePosition.y);
-    std::cout << mousePosition.x << "," << mousePosition.y << std::endl;
+    //std::cout << mousePosition.x << "," << mousePosition.y << std::endl;
     return glm::vec2{mousePosition};
 }
 
@@ -42,6 +44,15 @@ glm::vec2 getWindowSize(GLFWwindow* window)
     int width, height;
     glfwGetWindowSize(window, &width, &height);
     return glm::vec2{width, height};
+}
+
+std::pair<glm::ivec2, Error> getMonitorCurrentVideoMode()
+{
+    auto pMonitor{glfwGetPrimaryMonitor()};
+    if (!pMonitor) return std::make_pair(glm::ivec2{}, makeError("no primary monitor"));
+    auto pVideoMode{glfwGetVideoMode(pMonitor)};
+    if (!pVideoMode) return std::make_pair(glm::ivec2{}, makeError("no video mode"));
+    return std::make_pair(glm::ivec2{pVideoMode->width, pVideoMode->height}, nil);
 }
 
 glm::vec2 toNormalizedCoordinates(GLFWwindow* window, glm::vec2 const& pixelCoordinates)
@@ -68,7 +79,7 @@ void mouseBtnFun(GLFWwindow* window, int button, int action, int mod)
         glm::vec2 pixelOriginInMonometric{-windowSize.x/windowSize.y, 1.0f};
         glm::vec2 monometricPosition = toMonometric * mousePixelPosition + pixelOriginInMonometric;
 
-        std::cout << "mouse: (" << monometricPosition.x << "," << monometricPosition.y << ")" << std::endl;
+        //std::cout << "mouse: (" << monometricPosition.x << "," << monometricPosition.y << ")" << std::endl;
 
         std::vector<std::shared_ptr<Trace>> *vpTraces = reinterpret_cast<std::vector<std::shared_ptr<Trace>> *>(glfwGetWindowUserPointer(window));
         auto [pTraceFactory, err] = TraceFactory::getInstance(windowSize.y/windowSize.x);
@@ -77,7 +88,8 @@ void mouseBtnFun(GLFWwindow* window, int button, int action, int mod)
             std::cout << "could not get TraceFactory instance: " << err.value() << std::endl;
             return;
         }
-        auto [pTrace, err1] = pTraceFactory->make(monometricPosition, uniformInInterval(0, 2 * M_PI));
+        auto now = std::chrono::steady_clock::now();
+        auto [pTrace, err1] = pTraceFactory->make(monometricPosition, uniformInInterval(0, 2 * M_PI), now);
         if (err1 == nil)
         {
             vpTraces->push_back(pTrace);
@@ -93,19 +105,13 @@ void mouseBtnFun(GLFWwindow* window, int button, int action, int mod)
     }
 }
 
-std::vector<std::shared_ptr<Trace>> genTraces(int count, glm::vec2 const& topLeft, glm::vec2 const& bottomRight, float windowHeightOverWidth)
+std::vector<std::shared_ptr<Trace>> genTraces(int count, glm::vec2 const& topLeft, glm::vec2 const& bottomRight, std::shared_ptr<TraceFactory> pTraceFactory)
 {
+    auto now = std::chrono::steady_clock::now();
     std::vector<std::shared_ptr<Trace>> vpTraces;
-    auto [pTraceFactory, err] = TraceFactory::getInstance(windowHeightOverWidth);
-    if (err != nil)
-    {
-        std::cout << "could not genTraces():" << err.value() << std::endl;
-        return {};
-    }
-
     for (int i = 0; i < count; i++)
     {
-        auto [pTrace, err] = pTraceFactory->make(BoundingBox{glm::vec2{-1.0, 1.0}, glm::vec2{1.0, -1.0}});
+        auto [pTrace, err] = pTraceFactory->make(BoundingBox{glm::vec2{-1.0, 1.0}, glm::vec2{1.0, -1.0}}, now);
         if (err != nil)
         {
             std::cout << "could not make trace: " << err.value() << std::endl;
@@ -123,10 +129,20 @@ using namespace std::chrono_literals;
 int main(int argc, char* argv[])
 {
     glfw::Lifecycle lc;
-    constexpr int kWidth = 800;
-    constexpr int kHeight = 300;
-    glfw::Window w{kWidth, kHeight, true};
-    float widthOverHeight = static_cast<float>(kWidth) / kHeight;
+//    constexpr int kWidth = 1000;
+//    constexpr int kHeight = 1000;
+    Error err;
+    glm::ivec2 videoMode;
+    std::tie(videoMode, err) = getMonitorCurrentVideoMode();
+    if (err != nil)
+    {
+        std::cout << "could not get current monitor video mode:" << err.value();
+        return -2;
+    }
+
+    glfw::Window w{videoMode.x, videoMode.y, true};
+    w.setFullscreen(true);
+    float widthOverHeight = static_cast<float>(videoMode.x) / videoMode.y;
     float heightOverWidth = 1.0f/widthOverHeight;
 
     constexpr std::size_t kMaxTraces{200};
@@ -134,10 +150,18 @@ int main(int argc, char* argv[])
     w.select();
     w.show();
 
+    std::shared_ptr<TraceFactory> pTraceFactory;
+    std::tie(pTraceFactory, err) = TraceFactory::getInstance(heightOverWidth);
+    if (err != nil)
+    {
+        std::cout << "could not genTraces():" << err.value() << std::endl;
+        return -2;
+    }
     glm::vec2 const topLeft{-widthOverHeight, 1.0};
     glm::vec2 const bottomRight{widthOverHeight, -1.0};
-    std::vector<std::shared_ptr<Trace>> vpTraces = genTraces(5, topLeft, bottomRight, heightOverWidth);
-    auto [pDoubleFramebuffer, err] = DoubleFramebuffer::get(kWidth, kHeight);
+    std::vector<std::shared_ptr<Trace>> vpTraces = genTraces(20, topLeft, bottomRight, pTraceFactory);
+    std::shared_ptr<DoubleFramebuffer> pDoubleFramebuffer;
+    std::tie(pDoubleFramebuffer, err) = DoubleFramebuffer::get(videoMode.x, videoMode.y);
     if (err != nil)
     {
         std::cout << "could not create double framebuffer:" << err.value() << std::endl;
@@ -154,24 +178,39 @@ int main(int argc, char* argv[])
     std::size_t missedDeadlines = 0;
     std::size_t totalIterations = 0;
 
+    bool missedDeadlinesPrinted{false};
+    int partialIterations{0};
+    std::optional<std::chrono::steady_clock::time_point> lastFpsPrint;
+
     while (w && !w.shouldClose())
     {
         ++totalIterations;
+        ++partialIterations;
         auto now = std::chrono::steady_clock::now();
         if (then)
         {
             auto overTime = (now - then.value()).count() / 1'000'000 - periodMs().count();
-            if (overTime > 0 && ++missedDeadlines % 50 == 0)
-                std::cout << "MISSED DEADLINES "
+            if (overTime > 0)
+            {
+                missedDeadlinesPrinted = false;
+                missedDeadlines++;
+            }
+            if (missedDeadlines % 50 == 0)
+            {
+                missedDeadlinesPrinted = true;
+                std::cout << now.time_since_epoch().count() / 1'000'000 << " MISSED DEADLINES " //<< std::setw(5) << std::setprecision(5)
                           << 100.0 * static_cast<double>(missedDeadlines) / totalIterations << "%" << std::endl;
+            }
+            auto fpsInterval = now - lastFpsPrint.value_or(now);
+            if (!lastFpsPrint || fpsInterval >= 1s)
+            {
+                std::cout << now.time_since_epoch().count() / 1e9 << " " << partialIterations / (fpsInterval.count()/1e9) << "fps" << std::endl;
+                partialIterations = 0;
+                lastFpsPrint = now;
+            }
         }
         then = now;
         w.pollEvents();
-
-        glClearColor(0, 0, 0, 1.0);
-        glClear(GL_COLOR_BUFFER_BIT);
-
-        pDoubleFramebuffer->renderPreviousFrame();
 
         std::vector<std::shared_ptr<Trace>> newTraces;
         prevTraceCount = vpTraces.size();
@@ -185,7 +224,7 @@ int main(int argc, char* argv[])
             if (traceOutOfBoundary ||
             (vpTraces.size() > (kMaxTraces - (kMaxTraces / 5))))
             {
-                std::cout << "KILL (" << (traceOutOfBoundary ? "B": "L") << ") " << *pTrace << std::endl;
+                //std::cout << "KILL (" << (traceOutOfBoundary ? "B": "L") << ") " << *pTrace << std::endl;
                 pTrace->kill();
                 itTrace = vpTraces.erase(itTrace);
                 tracesChanged = true;
@@ -217,9 +256,26 @@ int main(int argc, char* argv[])
             //std::cout << "count " << prevTraceCount << " -> " << vpTraces.size() << std::endl;
             //std::cout << std::endl << "============================" << std::endl << std::endl;
         }
-        for (auto pTrace : vpTraces)
+
+
+        auto pBulkRenderer(pTraceFactory->getBulkRenderer());
+        if (pBulkRenderer)
         {
-            pTrace->render();
+            for (auto pTrace : vpTraces)
+            {
+                pBulkRenderer->add(pTrace);
+            }
+            pBulkRenderer->bufferData();
+        }
+
+        glClearColor(0, 0, 0, 1.0);
+        glClear(GL_COLOR_BUFFER_BIT);
+
+        pDoubleFramebuffer->renderPreviousFrame();
+        if (pBulkRenderer)
+        {
+            pBulkRenderer->setColor(glm::vec3{1.0, 0.0, 1.0});
+            pBulkRenderer->render();
         }
 
         pDoubleFramebuffer->blitAndSwap();

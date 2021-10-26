@@ -1,5 +1,6 @@
 #pragma once
 
+#include "BulkRenderer.h"
 #include "BoundingBox.h"
 #include "Error.h"
 #include "Trace.h"
@@ -14,9 +15,11 @@ struct TraceFactory
 {
     static std::pair<std::shared_ptr<TraceFactory>, Error> getInstance(float windowHeightOverWidth);
 
-    std::pair<std::shared_ptr<Trace>, Error> make(BoundingBox const& allowedBox);
-    std::pair<std::shared_ptr<Trace>, Error> make(glm::vec2 const& initialPosition, float initialDirection_);
+    std::pair<std::shared_ptr<Trace>, Error> make(BoundingBox const& allowedBox, std::chrono::steady_clock::time_point const& creationTime);
+    std::pair<std::shared_ptr<Trace>, Error> make(glm::vec2 const& initialPosition, float initialDirection_, std::chrono::steady_clock::time_point const& creationTime);
     static void setNormalCoordinatesTransform(float windowHeightOverWidth);
+
+    std::shared_ptr<BulkRenderer> getBulkRenderer() const;
 
 private:
     static std::pair<std::shared_ptr<TraceFactoryImpl>, Error> createInstance(float windowHeightOverWidth);

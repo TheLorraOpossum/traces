@@ -6,8 +6,8 @@
 
 struct TraceFactoryImpl
 {
-    std::pair<std::shared_ptr<Trace>, Error> make(BoundingBox const& allowedBox);
-    std::pair<std::shared_ptr<Trace>, Error> make(glm::vec2 const& initialPosition, float initialDirection_);
+    std::pair<std::shared_ptr<Trace>, Error> make(BoundingBox const& allowedBox, const std::chrono::steady_clock::time_point &creationTime);
+    std::pair<std::shared_ptr<Trace>, Error> make(glm::vec2 const& initialPosition, float initialDirection_, const std::chrono::steady_clock::time_point &creationTime);
     void setNormalCoordinatesTransform(float windowHeightOverWidth);
 
     std::shared_ptr<const GLuint> pProgram;
@@ -25,15 +25,15 @@ std::pair<std::shared_ptr<const GLuint>, Error> makeProgram()
     return makeProgram(pVert, pFrag);
 }
 
-std::pair<std::shared_ptr<Trace>, Error> TraceFactoryImpl::make(BoundingBox const &allowedBox)
+std::pair<std::shared_ptr<Trace>, Error> TraceFactoryImpl::make(BoundingBox const &allowedBox, const std::chrono::steady_clock::time_point &creationTime)
 {
     glm::vec2 initialPosition = uniformInBox(allowedBox);
-    return std::make_pair(std::make_shared<Trace>(initialPosition, uniformInInterval(0, 2 * M_PI), pProgram, pBuffer), nil);
+    return std::make_pair(std::make_shared<Trace>(initialPosition, uniformInInterval(0, 2 * M_PI), creationTime, pProgram, pBuffer), nil);
 }
 
-std::pair<std::shared_ptr<Trace>, Error> TraceFactoryImpl::make(glm::vec2 const &initialPosition, float initialDirection_)
+std::pair<std::shared_ptr<Trace>, Error> TraceFactoryImpl::make(glm::vec2 const &initialPosition, float initialDirection_, const std::chrono::steady_clock::time_point &creationTime)
 {
-    return std::make_pair(std::make_shared<Trace>(initialPosition, initialDirection_, pProgram, pBuffer), nil);
+    return std::make_pair(std::make_shared<Trace>(initialPosition, initialDirection_, creationTime, pProgram, pBuffer), nil);
 }
 
 void TraceFactoryImpl::setNormalCoordinatesTransform(float windowHeightOverWidth)
@@ -60,22 +60,28 @@ std::pair<std::shared_ptr<TraceFactory>, Error> TraceFactory::getInstance(float 
     return std::make_pair(std::make_shared<TraceFactory>(), nil);
 }
 
-std::pair<std::shared_ptr<Trace>, Error> TraceFactory::make(BoundingBox const& allowedBox)
+std::pair<std::shared_ptr<Trace>, Error> TraceFactory::make(BoundingBox const& allowedBox, const std::chrono::steady_clock::time_point &creationTime)
 {
     if (!pImpl) return std::make_pair(nullptr, makeError("no TraceFactory instance:", instanceCreationError.value()));
-    return pImpl->make(allowedBox);
+    return pImpl->make(allowedBox, creationTime);
 }
 
-std::pair<std::shared_ptr<Trace>, Error> TraceFactory::make(glm::vec2 const &initialPosition, float initialDirection_)
+std::pair<std::shared_ptr<Trace>, Error> TraceFactory::make(glm::vec2 const &initialPosition, float initialDirection_, const std::chrono::steady_clock::time_point &creationTime)
 {
     if (!pImpl) return std::make_pair(nullptr, makeError("no TraceFactory instance:", instanceCreationError.value()));
-    return pImpl->make(initialPosition, initialDirection_);
+    return pImpl->make(initialPosition, initialDirection_, creationTime);
 }
 
 void TraceFactory::setNormalCoordinatesTransform(float windowHeightOverWidth)
 {
     if (!pImpl) return;
     pImpl->setNormalCoordinatesTransform(windowHeightOverWidth);
+}
+
+std::shared_ptr<BulkRenderer> TraceFactory::getBulkRenderer() const
+{
+    if (!pImpl) return nullptr;
+    return std::make_shared<BulkRenderer>(*pImpl->pProgram, *pImpl->pBuffer);
 }
 
 std::pair<std::shared_ptr<TraceFactoryImpl>, Error> TraceFactory::createInstance(float windowHeightOverWidth)

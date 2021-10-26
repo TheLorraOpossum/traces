@@ -8,16 +8,19 @@ using namespace glfw;
 
 Window::Window(int width, int height, std::string const& title, bool borderless)
     : swapPeriodMs_{periodMs()}
+    , width_{width}
+    , height_{height}
 {
     if (borderless)
     {
         glfwWindowHint(GLFW_DECORATED, GLFW_FALSE);
     }
     glfwWindowHint(GLFW_VISIBLE, GLFW_FALSE);
-    glfwWindowHint(GLFW_SAMPLES, 4);
+    //glfwWindowHint(GLFW_SAMPLES, 4);
     pWindow_ = glfwCreateWindow(width, height, title.c_str(), nullptr, nullptr);
     select();
     glewInit();
+    glfwSwapInterval(1);
 }
 
 Window::Window(int width, int height)
@@ -64,14 +67,24 @@ void Window::pollEvents()
 void Window::present()
 {
     if (!pWindow_) return;
-    auto now = std::chrono::steady_clock::now();
-    if (!lastSwapTime_ || (now - lastSwapTime_.value()) >= swapPeriodMs_)
-    {
-        lastSwapTime_ = now;
-        glfwSwapBuffers(pWindow_);
-        return;
-    }
-    std::this_thread::sleep_until(lastSwapTime_.value() + swapPeriodMs_);
+//    auto now = std::chrono::steady_clock::now();
+//    if (!lastSwapTime_ || (now - lastSwapTime_.value()) >= swapPeriodMs_)
+//    {
+//        lastSwapTime_ = now;
+//        glfwSwapBuffers(pWindow_);
+//        return;
+//    }
+//    std::this_thread::sleep_until(lastSwapTime_.value() + swapPeriodMs_);
+    glfwSwapBuffers(pWindow_);
+}
+
+void Window::setFullscreen(bool fullscreen)
+{
+    if (!pWindow_) return;
+    glfwSetWindowMonitor(pWindow_,
+                         (fullscreen ? glfwGetPrimaryMonitor() : nullptr),
+                         0, 0, width_, height_,
+                         GLFW_DONT_CARE);
 }
 
 Window::operator bool()

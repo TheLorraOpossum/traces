@@ -27,10 +27,14 @@ struct Window
 
     void present();
 
+    void setFullscreen(bool fullscreen);
+
     operator bool();
 
     GLFWwindow* pWindow_{};
     std::optional<std::chrono::steady_clock::time_point> lastSwapTime_;
     std::chrono::milliseconds swapPeriodMs_;
+    int width_;
+    int height_;
 };
 } // namespace glfw

@@ -57,7 +57,3 @@ std::shared_ptr<GLuint const> genBuffer()
     return pBufferLocal;
 }
 
-std::chrono::milliseconds periodMs()
-{
-    return std::chrono::milliseconds{16};
-}

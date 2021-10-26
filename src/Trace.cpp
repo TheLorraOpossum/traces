@@ -4,21 +4,24 @@
 #include <glm/gtx/polar_coordinates.hpp>
 #include <random>
 
-Trace::Trace(glm::vec2 const& initialPosition, float initialDirection_, std::shared_ptr<const GLuint> pProgram, std::shared_ptr<const GLuint> pBuffer)
+namespace {
+std::random_device rd;
+std::mt19937 gen{rd()};
+std::geometric_distribution<> dis;
+std::normal_distribution<> nd{1.0, 0.25};
+}
+
+Trace::Trace(glm::vec2 const& initialPosition, float initialDirection_, std::chrono::steady_clock::time_point const& creationTime, std::shared_ptr<const GLuint> pProgram, std::shared_ptr<const GLuint> pBuffer)
     : position_{initialPosition}
     , direction_{initialDirection_}
     , color_{1.0, 0.0, 1.0}
     , pProgram_{pProgram}
     , pBuffer_{pBuffer}
-    , creationTime_{std::chrono::steady_clock::now()}
+    , creationTime_{creationTime}
     , deathTime_{creationTime_}
     , killed_{false}
     , id_{++nextId_}
 {
-    std::random_device rd;
-    std::mt19937 gen{rd()};
-    std::geometric_distribution<> dis;
-    std::normal_distribution<> nd{1.0, 0.25};
     //deathTime_ += std::chrono::milliseconds{dis(gen)*2000};
     deathTime_ += std::chrono::milliseconds{static_cast<int>(nd(gen)*800)};
     speed_ = nd(gen);
@@ -68,8 +71,8 @@ void Trace::render()
 std::pair<std::shared_ptr<Trace>, std::shared_ptr<Trace>> Trace::split() const
 {
     return std::make_pair(
-        std::make_shared<Trace>(position_, uniformAround(direction_, M_PI / 4), pProgram_, pBuffer_),
-        std::make_shared<Trace>(position_, uniformAround(direction_, M_PI / 4), pProgram_, pBuffer_)
+        std::make_shared<Trace>(position_, uniformAround(direction_, M_PI / 4), deathTime_, pProgram_, pBuffer_),
+        std::make_shared<Trace>(position_, uniformAround(direction_, M_PI / 4), deathTime_, pProgram_, pBuffer_)
     );
 }
 
