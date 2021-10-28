@@ -12,7 +12,7 @@
 
 struct Trace
 {
-    Trace(glm::vec2 const& initialPosition, float initialDirection_, std::chrono::steady_clock::time_point const& creationTime, std::shared_ptr<const GLuint> pProgram, std::shared_ptr<const GLuint> pBuffer);
+    Trace(glm::vec2 const& initialPosition, float initialDirection_, const glm::vec3 &color, std::chrono::steady_clock::time_point const& creationTime, std::shared_ptr<const GLuint> pProgram, std::shared_ptr<const GLuint> pBuffer);
 
     void step(std::chrono::milliseconds const& ms);
 

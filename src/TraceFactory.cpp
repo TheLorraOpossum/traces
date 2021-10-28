@@ -6,8 +6,8 @@
 
 struct TraceFactoryImpl
 {
-    std::pair<std::shared_ptr<Trace>, Error> make(BoundingBox const& allowedBox, const std::chrono::steady_clock::time_point &creationTime);
-    std::pair<std::shared_ptr<Trace>, Error> make(glm::vec2 const& initialPosition, float initialDirection_, const std::chrono::steady_clock::time_point &creationTime);
+    std::pair<std::shared_ptr<Trace>, Error> make(BoundingBox const& allowedBox, glm::vec3 const& color, const std::chrono::steady_clock::time_point &creationTime);
+    std::pair<std::shared_ptr<Trace>, Error> make(glm::vec2 const& initialPosition, float initialDirection_, glm::vec3 const& color, const std::chrono::steady_clock::time_point &creationTime);
     void setNormalCoordinatesTransform(float windowHeightOverWidth);
 
     std::shared_ptr<const GLuint> pProgram;
@@ -25,15 +25,15 @@ std::pair<std::shared_ptr<const GLuint>, Error> makeProgram()
     return makeProgram(pVert, pFrag);
 }
 
-std::pair<std::shared_ptr<Trace>, Error> TraceFactoryImpl::make(BoundingBox const &allowedBox, const std::chrono::steady_clock::time_point &creationTime)
+std::pair<std::shared_ptr<Trace>, Error> TraceFactoryImpl::make(BoundingBox const &allowedBox, glm::vec3 const& color, const std::chrono::steady_clock::time_point &creationTime)
 {
     glm::vec2 initialPosition = uniformInBox(allowedBox);
-    return std::make_pair(std::make_shared<Trace>(initialPosition, uniformInInterval(0, 2 * M_PI), creationTime, pProgram, pBuffer), nil);
+    return std::make_pair(std::make_shared<Trace>(initialPosition, uniformInInterval(0, 2 * M_PI), color, creationTime, pProgram, pBuffer), nil);
 }
 
-std::pair<std::shared_ptr<Trace>, Error> TraceFactoryImpl::make(glm::vec2 const &initialPosition, float initialDirection_, const std::chrono::steady_clock::time_point &creationTime)
+std::pair<std::shared_ptr<Trace>, Error> TraceFactoryImpl::make(glm::vec2 const &initialPosition, float initialDirection_, glm::vec3 const& color, const std::chrono::steady_clock::time_point &creationTime)
 {
-    return std::make_pair(std::make_shared<Trace>(initialPosition, initialDirection_, creationTime, pProgram, pBuffer), nil);
+    return std::make_pair(std::make_shared<Trace>(initialPosition, initialDirection_, color, creationTime, pProgram, pBuffer), nil);
 }
 
 void TraceFactoryImpl::setNormalCoordinatesTransform(float windowHeightOverWidth)
@@ -60,16 +60,16 @@ std::pair<std::shared_ptr<TraceFactory>, Error> TraceFactory::getInstance(float 
     return std::make_pair(std::make_shared<TraceFactory>(), nil);
 }
 
-std::pair<std::shared_ptr<Trace>, Error> TraceFactory::make(BoundingBox const& allowedBox, const std::chrono::steady_clock::time_point &creationTime)
+std::pair<std::shared_ptr<Trace>, Error> TraceFactory::make(BoundingBox const& allowedBox, glm::vec3 const& color, const std::chrono::steady_clock::time_point &creationTime)
 {
     if (!pImpl) return std::make_pair(nullptr, makeError("no TraceFactory instance:", instanceCreationError.value()));
-    return pImpl->make(allowedBox, creationTime);
+    return pImpl->make(allowedBox, color, creationTime);
 }
 
-std::pair<std::shared_ptr<Trace>, Error> TraceFactory::make(glm::vec2 const &initialPosition, float initialDirection_, const std::chrono::steady_clock::time_point &creationTime)
+std::pair<std::shared_ptr<Trace>, Error> TraceFactory::make(glm::vec2 const &initialPosition, float initialDirection_, glm::vec3 const& color, const std::chrono::steady_clock::time_point &creationTime)
 {
     if (!pImpl) return std::make_pair(nullptr, makeError("no TraceFactory instance:", instanceCreationError.value()));
-    return pImpl->make(initialPosition, initialDirection_, creationTime);
+    return pImpl->make(initialPosition, initialDirection_, color, creationTime);
 }
 
 void TraceFactory::setNormalCoordinatesTransform(float windowHeightOverWidth)

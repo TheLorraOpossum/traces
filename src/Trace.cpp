@@ -11,10 +11,10 @@ std::geometric_distribution<> dis;
 std::normal_distribution<> nd{1.0, 0.25};
 }
 
-Trace::Trace(glm::vec2 const& initialPosition, float initialDirection_, std::chrono::steady_clock::time_point const& creationTime, std::shared_ptr<const GLuint> pProgram, std::shared_ptr<const GLuint> pBuffer)
+Trace::Trace(glm::vec2 const& initialPosition, float initialDirection_, glm::vec3 const& color, std::chrono::steady_clock::time_point const& creationTime, std::shared_ptr<const GLuint> pProgram, std::shared_ptr<const GLuint> pBuffer)
     : position_{initialPosition}
     , direction_{initialDirection_}
-    , color_{1.0, 0.0, 1.0}
+    , color_{color}
     , pProgram_{pProgram}
     , pBuffer_{pBuffer}
     , creationTime_{creationTime}
@@ -71,8 +71,8 @@ void Trace::render()
 std::pair<std::shared_ptr<Trace>, std::shared_ptr<Trace>> Trace::split() const
 {
     return std::make_pair(
-        std::make_shared<Trace>(position_, uniformAround(direction_, M_PI / 4), deathTime_, pProgram_, pBuffer_),
-        std::make_shared<Trace>(position_, uniformAround(direction_, M_PI / 4), deathTime_, pProgram_, pBuffer_)
+        std::make_shared<Trace>(position_, uniformAround(direction_, M_PI / 4), color_, deathTime_, pProgram_, pBuffer_),
+        std::make_shared<Trace>(position_, uniformAround(direction_, M_PI / 4), color_, deathTime_, pProgram_, pBuffer_)
     );
 }
 

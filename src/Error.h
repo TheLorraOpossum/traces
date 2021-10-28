@@ -11,6 +11,6 @@ template<typename ...Args>
 Error makeError(Args ... args)
 {
     std::ostringstream stream;
-    (stream << " " << ... << args);
+    ((stream << " ") << ... << args);
     return stream.str();
 }
