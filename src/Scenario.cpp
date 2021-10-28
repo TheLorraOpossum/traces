@@ -37,6 +37,7 @@ std::pair<std::shared_ptr<Scenario>, Error> Scenario::make(std::size_t initialTr
     {
         return std::make_pair(nullptr, makeError("could not make scenario:", err.value()));
     }
+    pScenario->m_pDoubleFramebuffer->setBlurStandardDeviationOnBlitAndSwap(pOptions->traceBlurStandardDeviation);
 
     pScenario->genTraces(initialTraceCount);
 

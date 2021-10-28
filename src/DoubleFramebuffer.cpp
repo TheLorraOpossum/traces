@@ -181,4 +181,4 @@ int DoubleFramebuffer::currentIndex_{0};
 std::shared_ptr<DoubleFramebuffer> DoubleFramebuffer::pInstance;
 Error DoubleFramebuffer::creationError;
 
-float DoubleFramebuffer::m_blurStandardDeviationOnBlitAndSwap{0.002};
+float DoubleFramebuffer::m_blurStandardDeviationOnBlitAndSwap{0.0015};

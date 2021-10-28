@@ -20,6 +20,7 @@ struct Scenario
         std::size_t maxTraces{200};
         float splitProbability{.4f};
         std::chrono::milliseconds stepPeriod{16};
+        float traceBlurStandardDeviation{0.0015};
         glm::vec3 color{1.0, 0.0, 1.0};
     };
 

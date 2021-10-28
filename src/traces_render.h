@@ -23,6 +23,8 @@ struct TracesScenarioOptions
     float splitProbability;
     size_t stepPeriodMs;
 
+    float traceBlurStandardDeviation;
+
     float colorR;
     float colorG;
     float colorB;

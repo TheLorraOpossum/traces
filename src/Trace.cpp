@@ -8,7 +8,7 @@ namespace {
 std::random_device rd;
 std::mt19937 gen{rd()};
 std::geometric_distribution<> dis;
-std::normal_distribution<> nd{1.0, 0.25};
+std::normal_distribution<> nd{1.0, 0.5};
 }
 
 Trace::Trace(glm::vec2 const& initialPosition, float initialDirection_, glm::vec3 const& color, std::chrono::steady_clock::time_point const& creationTime, std::shared_ptr<const GLuint> pProgram, std::shared_ptr<const GLuint> pBuffer)
@@ -23,7 +23,7 @@ Trace::Trace(glm::vec2 const& initialPosition, float initialDirection_, glm::vec
     , id_{++nextId_}
 {
     //deathTime_ += std::chrono::milliseconds{dis(gen)*2000};
-    deathTime_ += std::chrono::milliseconds{static_cast<int>(nd(gen)*800)};
+    deathTime_ += std::chrono::milliseconds{static_cast<int>(nd(gen)*1000)};
     speed_ = nd(gen);
     step(periodMs());
 }
