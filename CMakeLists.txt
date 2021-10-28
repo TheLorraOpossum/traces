@@ -15,6 +15,7 @@ target_link_libraries(traces PRIVATE OpenGL::GL GLEW::glew glfw)
 
 set(libSrcs ${srcs})
 list(FILTER libSrcs EXCLUDE REGEX ".*src/main.cpp")
+list(FILTER libSrcs EXCLUDE REGEX ".*src/Window.cpp")
 list(APPEND libSrcs "src/traces_render.cpp")
 
 add_library(traces_render STATIC ${libSrcs})

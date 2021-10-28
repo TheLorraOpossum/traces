@@ -1,6 +1,7 @@
 #include "DoubleFramebuffer.h"
 #include "Program.h"
 #include "Shader.h"
+#include "ShaderSources.h"
 #include "Utils.h"
 #include <GL/glew.h>
 
@@ -103,7 +104,7 @@ void DoubleFramebuffer::bindFramebuffer()
 
 std::pair<std::shared_ptr<const GLuint>, Error> DoubleFramebuffer::makeQuadRenderProgram()
 {
-    auto [pVert, pFrag, err] = loadShaderPair("../src/shaders", "texturedQuad");
+    auto [pVert, pFrag, err] = makeShaderPair(textureQuad_vert, texturedQuad_frag);
     if (err != nil)
     {
         return std::make_pair(nullptr, makeError("could not build texturedQuad program:", err.value()));

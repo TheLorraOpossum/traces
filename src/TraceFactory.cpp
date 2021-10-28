@@ -2,6 +2,7 @@
 #include "Utils.h"
 #include "Program.h"
 #include "Shader.h"
+#include "ShaderSources.h"
 #include <glm/gtc/type_ptr.hpp>
 
 struct TraceFactoryImpl
@@ -17,7 +18,7 @@ struct TraceFactoryImpl
 
 std::pair<std::shared_ptr<const GLuint>, Error> makeProgram()
 {
-    auto [pVert, pFrag, err] = loadShaderPair("../src/shaders", "trace");
+    auto [pVert, pFrag, err] = makeShaderPair(trace_vert, trace_frag);
     if (err != nil)
     {
         return std::make_pair(nullptr, makeError("could not load shaders:", err.value()));

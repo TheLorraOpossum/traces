@@ -45,7 +45,7 @@ std::pair<std::shared_ptr<const GLuint>, Error> loadShader(std::string const &pa
 std::tuple<std::shared_ptr<const GLuint>, std::shared_ptr<const GLuint>, Error> loadShaderPair(std::string const &directory, std::string const &name)
 {
     std::vector<std::shared_ptr<const GLuint>> ids;
-    for (std::string ext : {".vert", ".frag"})
+    for (std::string const& ext : {".vert", ".frag"})
     {
         std::string path = directory + "/" + name + ext;
         auto const [pId, err] = loadShader(path);
@@ -73,6 +73,23 @@ std::pair<std::shared_ptr<const GLuint>, Error> makeShader(std::string const &so
     }
     glDeleteShader(id);
     return std::make_pair(nullptr, makeError("could not make shader:", err.value()));
+}
+
+std::tuple<std::shared_ptr<const GLuint>, std::shared_ptr<const GLuint>, Error> makeShaderPair(std::string const& vertexShaderSource, std::string const& fragmentShaderSource)
+{
+    std::vector<std::shared_ptr<const GLuint>> ids;
+
+    for (auto const& [source, type] : {std::make_pair(vertexShaderSource, GL_VERTEX_SHADER), std::make_pair(fragmentShaderSource, GL_FRAGMENT_SHADER)})
+    {
+        auto const [pId, err] = makeShader(source, type);
+        if (err != nil)
+        {
+            return std::make_tuple(nullptr, nullptr,
+                                   makeError("could not load shader pair, failed loading:", err.value()));
+        }
+        ids.push_back(pId);
+    }
+    return std::make_tuple(ids[0], ids[1], nil);
 }
 
 Error compileShader(GLuint id, std::string const &source)
@@ -123,8 +140,7 @@ struct GLuintDeleter : public std::default_delete<GLuint>
 {
     void operator()(GLuint *pId) const
     {
-        if (!pId)
-            return;
+        if (!pId) return;
         glDeleteShader(*pId);
     }
 };

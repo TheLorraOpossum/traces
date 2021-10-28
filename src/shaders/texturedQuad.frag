@@ -1,3 +1,4 @@
+R"(
 #version 450
 
 uniform sampler2D frameTexture;
@@ -10,3 +11,5 @@ void main()
     vec3 col = texture2D(frameTexture, texCoords).rgb * 0.985;
     color = vec4(col, 1.0);
 }
+)"
+
