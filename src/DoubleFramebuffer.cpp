@@ -35,6 +35,8 @@ std::pair<std::shared_ptr<DoubleFramebuffer>, Error> DoubleFramebuffer::get(int 
         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAX_LEVEL, 0);
         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
         glBindTexture(GL_TEXTURE_2D, 0);
 
         glBindFramebuffer(GL_DRAW_FRAMEBUFFER, framebuffers[i]);
@@ -63,6 +65,11 @@ std::pair<std::shared_ptr<DoubleFramebuffer>, Error> DoubleFramebuffer::get(int 
 
 void DoubleFramebuffer::renderPreviousFrame()
 {
+    renderPreviousFrame(0.0f, 1.0f);
+}
+
+void DoubleFramebuffer::renderPreviousFrame(float blurStandardDeviation, float fadeFactor)
+{
     if (noPreviousFrame) return;
     glUseProgram(*pQuadRenderProgram);
 
@@ -76,6 +83,16 @@ void DoubleFramebuffer::renderPreviousFrame()
     glBindTexture(GL_TEXTURE_2D, textures[previousIndex()]);
     glUniform1i(frameTextureLocation, 0);
 
+    GLint standardDeviationLocation = glGetUniformLocation(*pQuadRenderProgram, "standardDeviation");
+    glUniform1f(standardDeviationLocation, blurStandardDeviation);
+
+    GLint fadeFactorLocation = glGetUniformLocation(*pQuadRenderProgram, "fadeFactor");
+    glUniform1f(fadeFactorLocation, fadeFactor);
+
+    GLint xCorrectionLocation = glGetUniformLocation(*pQuadRenderProgram, "xCorrection");
+    glUniform1f(xCorrectionLocation, static_cast<float>(screenSize.y)/screenSize.x);
+
+
     glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
 
     glDisableVertexAttribArray(positionLocation);
@@ -85,14 +102,18 @@ void DoubleFramebuffer::renderPreviousFrame()
 void DoubleFramebuffer::blitAndSwap()
 {
     noPreviousFrame = false;
-    glBindFramebuffer(GL_DRAW_FRAMEBUFFER, 0);
-    glBindFramebuffer(GL_READ_FRAMEBUFFER, framebuffers[currentIndex_]);
-    glBlitFramebuffer(0, 0, screenSize.x, screenSize.y,
-                      0, 0, screenSize.x, screenSize.y,
-                      GL_COLOR_BUFFER_BIT, GL_NEAREST);
-    glBindFramebuffer(GL_READ_FRAMEBUFFER, 0);
 
     currentIndex_ = (currentIndex_ + 1) % 2;
+    glBindFramebuffer(GL_DRAW_FRAMEBUFFER, 0);
+    renderPreviousFrame(m_blurStandardDeviationOnBlitAndSwap, 1.0);
+    //glBindFramebuffer(GL_DRAW_FRAMEBUFFER, 0);
+    //glBindFramebuffer(GL_READ_FRAMEBUFFER, framebuffers[currentIndex_]);
+    //glBlitFramebuffer(0, 0, screenSize.x, screenSize.y,
+    //                  0, 0, screenSize.x, screenSize.y,
+    //                  GL_COLOR_BUFFER_BIT, GL_NEAREST);
+    //glBindFramebuffer(GL_READ_FRAMEBUFFER, 0);
+
+    //currentIndex_ = (currentIndex_ + 1) % 2;
 
     bindFramebuffer();
 }
@@ -100,6 +121,16 @@ void DoubleFramebuffer::blitAndSwap()
 void DoubleFramebuffer::bindFramebuffer()
 {
     glBindFramebuffer(GL_DRAW_FRAMEBUFFER, framebuffers[currentIndex_]);
+}
+
+void DoubleFramebuffer::setBlurStandardDeviationOnBlitAndSwap(float standardDeviation)
+{
+    m_blurStandardDeviationOnBlitAndSwap = standardDeviation;
+}
+
+float DoubleFramebuffer::blurStandardDeviationOnBlitAndSwap()
+{
+    return m_blurStandardDeviationOnBlitAndSwap;
 }
 
 std::pair<std::shared_ptr<const GLuint>, Error> DoubleFramebuffer::makeQuadRenderProgram()
@@ -149,3 +180,5 @@ glm::ivec2 DoubleFramebuffer::screenSize;
 int DoubleFramebuffer::currentIndex_{0};
 std::shared_ptr<DoubleFramebuffer> DoubleFramebuffer::pInstance;
 Error DoubleFramebuffer::creationError;
+
+float DoubleFramebuffer::m_blurStandardDeviationOnBlitAndSwap{0.002};

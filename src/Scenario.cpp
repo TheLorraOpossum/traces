@@ -162,7 +162,7 @@ void Scenario::draw()
     glClearColor(0, 0, 0, 1.0);
     glClear(GL_COLOR_BUFFER_BIT);
 
-    m_pDoubleFramebuffer->renderPreviousFrame();
+    m_pDoubleFramebuffer->renderPreviousFrame(0.0, 0.985);
     if (m_pBulkRenderer)
     {
         m_pBulkRenderer->setColor(m_options.color);

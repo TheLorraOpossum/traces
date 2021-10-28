@@ -45,7 +45,7 @@ int main(int argc, char* argv[])
 
     std::shared_ptr<Scenario> pScenario;
     Scenario::Options options;
-    options.color = glm::vec3{0.0, 1.0, 1.0};
+    options.color = glm::vec3{1.0, 0.0, 1.0};
     std::tie(pScenario, err) = Scenario::make(20, videoMode, options);
     if (err != nil)
     {

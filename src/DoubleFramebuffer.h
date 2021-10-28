@@ -13,10 +13,14 @@ struct DoubleFramebuffer
     static std::pair<std::shared_ptr<DoubleFramebuffer>, Error> get(int width, int height);
 
     void renderPreviousFrame();
+    void renderPreviousFrame(float blurStandardDeviation, float fadeFactor);
 
     void blitAndSwap();
 
     void bindFramebuffer();
+
+    void setBlurStandardDeviationOnBlitAndSwap(float standardDeviation);
+    float blurStandardDeviationOnBlitAndSwap();
 
     static std::pair<std::shared_ptr<const GLuint>, Error> makeQuadRenderProgram();
     int currentIndex();
@@ -32,4 +36,6 @@ struct DoubleFramebuffer
     static int currentIndex_;
     static std::shared_ptr<DoubleFramebuffer> pInstance;
     static Error creationError;
+
+    static float m_blurStandardDeviationOnBlitAndSwap;
 };
