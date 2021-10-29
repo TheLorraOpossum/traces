@@ -4,6 +4,12 @@
 
 Inspired by https://mrdoob.com/#/111/branching , I wanted to re-write it in C++.
 
+Build requirements:
+  * GLFW3 (development package, libglfw3-dev on Ubuntu)
+  * GLEW 2.1 (development package, libglew-dev on Ubuntu)
+  * cmake >= 3.16
+  * a C++17-capable compiler
+
 How to build:
 
 ```Bash
