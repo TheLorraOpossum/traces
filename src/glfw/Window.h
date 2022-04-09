@@ -2,6 +2,7 @@
 
 #include <chrono>
 #include <optional>
+#include <string>
 
 struct GLFWwindow;
 
